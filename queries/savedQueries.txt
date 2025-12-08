@@ -1,0 +1,1 @@
+# Prolog queries learned at runtime will be appended here by reasoning_node/knowledge_node.

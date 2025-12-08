@@ -13,9 +13,14 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   gazebo_msgs
+  sensor_msgs
   tf
   tf2
   tf2_ros
+  image_transport
+  cv_bridge
+  trajectory_msgs
+  std_srvs
   message_generation
   message_runtime
   rosprolog
@@ -119,9 +124,12 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES world_percept_assig4
- CATKIN_DEPENDS roscpp std_msgs gazebo_msgs geometry_msgs rosprolog
+ CATKIN_DEPENDS roscpp std_msgs gazebo_msgs geometry_msgs rosprolog sensor_msgs image_transport cv_bridge trajectory_msgs std_srvs
 #  DEPENDS system_lib
 )
+
+# OpenCV for vision-based learning
+find_package(OpenCV REQUIRED)
 
 # find SWI Prolog libraries
 find_package(PkgConfig)
@@ -140,6 +148,7 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -168,13 +177,6 @@ add_dependencies(direct_percept_node
                         ${catkin_EXPORTED_TARGETS})
 target_link_libraries(direct_percept_node ${catkin_LIBRARIES}  ${roscpp_LIBRARIES} )
 
-
-add_executable(map_generator_node src/map_generator_node.cpp)
-add_dependencies(map_generator_node 
-                        ${${PROJECT_NAME}_EXPORTED_TARGETS} 
-                        ${catkin_EXPORTED_TARGETS})
-target_link_libraries(map_generator_node ${catkin_LIBRARIES}  ${roscpp_LIBRARIES} )
-
 add_executable(reasoning_node src/reasoning_node.cpp)
 add_dependencies(reasoning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(reasoning_node  ${catkin_LIBRARIES})
@@ -186,6 +188,15 @@ target_link_libraries(knowledge_node  ${catkin_LIBRARIES})
 add_executable(tiago_control_node src/tiago_control_node.cpp)
 add_dependencies(tiago_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(tiago_control_node  ${catkin_LIBRARIES})
+
+add_executable(learning_node src/learning_node.cpp)
+add_dependencies(learning_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(learning_node ${catkin_LIBRARIES} ${roscpp_LIBRARIES} ${OpenCV_LIBRARIES})
+
+catkin_install_python(PROGRAMS
+  scripts/learning_metrics.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
