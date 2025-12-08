@@ -1,0 +1,10 @@
+# Name of the target object to reach
+string target_name
+
+---
+# Commanded twist for Tiago
+geometry_msgs/Twist cmd_vel
+# True if a valid command was computed
+bool success
+# Optional message in case of failure
+string message

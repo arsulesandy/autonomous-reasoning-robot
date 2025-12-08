@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Base path where query logs will be written/read (passed to reasoning_node) -->
+  <arg name="queries_root" default="/tmp"/>
+
+  <!-- rosprolog for storing & providing ontology services -->
+  <param name="initial_package" type="string" value="world_percept_assig4" />
+  <node name="rosprolog" pkg="rosprolog" type="rosprolog_node" output="screen"/>
+
+  <!-- Load parameters for query file location and save flag -->
+  <rosparam file="$(find world_percept_assig4)/config/loadKnowledge.yaml" command="load"/>
+
+  <!-- Reasoning node (requires queries_root as first arg) -->
+  <node name="reasoning_node"
+        pkg="world_percept_assig4"
+        type="reasoning_node"
+        output="screen"
+        args="$(arg queries_root)"/>
+
+</launch>

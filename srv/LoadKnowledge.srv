@@ -1,0 +1,6 @@
+# Request flag to start loading the knowledge base
+int32 start
+
+---
+# True if queries were loaded successfully
+bool confirm

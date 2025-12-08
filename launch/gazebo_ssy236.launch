@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <!-- Define the arguments for launching the tiago simulator in gazebo -->	
+  <arg name="end_effector" default="pal-gripper"/>
+  <arg name="public_sim" default="true"/>
+  <arg name="gzclient" default="true"/>
+  <arg name="recording" default="false"/>
+  <arg name="world" default="kitchen_chalmers"/>
+  <arg name="tuck_arm" default="true"/>	  
+  
+  
+  <env name="LC_NUMERIC" value="C" />
+
+  
+  <!-- Gazebo simulation -->
+  <include file="$(find tiago_gazebo)/launch/tiago_gazebo.launch">
+    <arg name="end_effector"      value="$(arg end_effector)"/>
+    <arg name="public_sim" value="$(arg public_sim)"/>
+    <arg name="world"      value="$(arg world)"/>
+    <arg name="gui"      value="$(arg gzclient)"/>
+    <arg name="recording" value="$(arg recording)"/>
+    <arg name="tuck_arm" value="$(arg tuck_arm)"/>	    
+  </include>
+  
+  <!-- Launch Rviz -->
+  <!-- To launch rviz and visualize the robot and its sensors, uncomment the below line-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tiago_gazebo)/config/tiago.rviz"/>
+
+  <!-- Task 1: provide a static transformation between /world and /odom so TF consumers can treat them as the same origin. -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_odom" args="0 0 0 0 0 0 world odom"/>
+
+</launch>

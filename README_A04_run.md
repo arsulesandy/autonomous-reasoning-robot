@@ -106,7 +106,7 @@ rosservice call /load_knowledge "start: 1"
 confirm: True
 ```
 
-## Controller check
+## Controller check (A04.T04)
 ```
 rosservice call /compute_target_twist "target_name: 'bookshelf'"
 
