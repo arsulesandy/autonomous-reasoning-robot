@@ -10,7 +10,6 @@
 #include <world_percept_assig4/UpdateObjectList.h>
 #include <world_percept_assig4/SetInitTiagoPose.h>
 
-#include <cctype> //library needed for the toupper function
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
@@ -24,20 +23,20 @@ private:
     std::string srv_update_obj_name_;        ///< name of the service provided by the map generator node
     ros::Subscriber sub_gazebo_data_;     ///< Subscriber gazebo model_states
 
-    std::string srv_assert_knowledge_name_; ///< Name of the service to assert knowledge in the ontology
-
     std::vector<std::string> v_seen_obj_;  ///< List of objects seen by the robot and sent to the map generator node
 
-    ros::ServiceClient client_map_generator_; ///< Client to request the object list update in the map generator node
+    ros::ServiceClient client_learning_; ///< Client to request the object list update in the learning node
 
-    ros::ServiceClient client_reasoning_; ///< Client to assert objects in the knowledge base
-
+    bool use_ground_truth_;
 
 public:
 
     WorldInfo(ros::NodeHandle& nh)
     {
         ROS_WARN_STREAM("Created world info");
+
+        ros::NodeHandle pnh("~");
+        pnh.param("use_ground_truth", use_ground_truth_, false);
 
         // This objects will not be sent to the Map generator node
         v_seen_obj_.push_back("tiago");
@@ -48,10 +47,7 @@ public:
         // create client and wait until service is advertised
         srv_update_obj_name_="update_object_list";
 
-        client_map_generator_ = nh.serviceClient<world_percept_assig4::UpdateObjectList>(srv_update_obj_name_);
-        // create a client for the reasoning node service to assert knowledge
-        srv_assert_knowledge_name_ = "assert_knowledge";
-        client_reasoning_ = nh.serviceClient<world_percept_assig4::UpdateObjectList>(srv_assert_knowledge_name_);
+        client_learning_ = nh.serviceClient<world_percept_assig4::UpdateObjectList>(srv_update_obj_name_);
 
         // Wait for the service to be advertised
         ROS_INFO("Waiting for service %s to be advertised...", srv_update_obj_name_.c_str());
@@ -67,8 +63,15 @@ public:
 
         ROS_INFO_STREAM("Connected to service: "<<srv_update_obj_name_);
 
-        // Create subscriber to receive the commanded turtle state. This state will be generated from a trajectory generator
-        sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &WorldInfo::topic_callback, this);
+        if (use_ground_truth_)
+        {
+            sub_gazebo_data_ = nh.subscribe(subs_topic_name_, 100, &WorldInfo::topic_callback, this);
+            ROS_WARN_STREAM("percept_node using /gazebo/model_states ground truth (use_ground_truth:=true).");
+        }
+        else
+        {
+            ROS_INFO_STREAM("percept_node idle (use_ground_truth:=false); learning_node handles sensor-driven detections.");
+        }
     };
 
     ~WorldInfo()
@@ -77,26 +80,6 @@ public:
     };
 
 private:
-
-/**
-   * @brief Function to always have the first letter of a string as capital letter
-   *
-    */
-
-  std::string capitalizeFirstLetter(const std::string& s)
-  {
-   std::string capitalized_s = s;
-
-   // first verify if the string is not empty
-    if(!capitalized_s.empty())
-    {
-        //convert the first character to uppercase
-        capitalized_s[0] = std::toupper(capitalized_s[0]);
-    }
-
-    return capitalized_s;
-
-  }
 
 /**
    * @brief Callback function to receive the Gazebo Model State topic
@@ -150,7 +133,7 @@ private:
 
                 bool map_updated = false;
 
-                if (client_map_generator_.call(srv))
+                if (client_learning_.call(srv))
                 {
                     ROS_INFO_STREAM("Object List Updated?: "<< (int)srv.response.confirmation);
 
@@ -165,26 +148,6 @@ private:
                 else
                 {
                     ROS_ERROR_STREAM("Failed to call service "<<srv_update_obj_name_);
-                }
-
-                if (map_updated)
-                {
-                    // call the reasoning service
-                    world_percept_assig4::UpdateObjectList srv_reasoning;
-                    //before calling the srv, make sure that the first letter of the "s" is capitalized
-                    std::string capitalized_s = capitalizeFirstLetter(s);
-                    srv_reasoning.request.object_name= capitalized_s; //I just need to send the ID of the object
-
-                    if(client_reasoning_.call(srv_reasoning))
-                    {
-                        ROS_WARN_STREAM ("Creating a new instance of: "<< capitalized_s);
-
-                        ROS_INFO_STREAM ("New instance included in knowledge: "<<(int)srv_reasoning.response.confirmation);
-                    }
-                    else
-                    {
-                       ROS_ERROR_STREAM("Failed to call service "<<srv_assert_knowledge_name_);
-                    }
                 }
             }
         } //if d

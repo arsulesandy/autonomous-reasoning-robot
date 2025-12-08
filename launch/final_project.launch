@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="queries_root" default="$(find world_percept_assig4)"/>
+  <arg name="target_name" default="bookshelf"/>
+  <arg name="vision_topic" default="head_front_camera/rgb/image_raw"/>
+
+  <!-- Ontology backend -->
+  <param name="initial_package" type="string" value="world_percept_assig4" />
+  <rosparam file="$(find world_percept_assig4)/config/loadKnowledge.yaml" command="load"/>
+  <node name="rosprolog" pkg="rosprolog" type="rosprolog_node" output="screen"/>
+
+  <!-- Reasoning and knowledge handling -->
+  <node name="reasoning_node"
+        pkg="world_percept_assig4"
+        type="reasoning_node"
+        output="screen"
+        args="$(arg queries_root)"/>
+
+  <node name="knowledge_node"
+        pkg="world_percept_assig4"
+        type="knowledge_node"
+        output="screen"
+        args="$(arg queries_root)"/>
+
+  <!-- Perception stack -->
+  <node name="direct_percept_node" pkg="world_percept_assig4" type="direct_percept_node" output="screen"/>
+  <node name="percept_node" pkg="world_percept_assig4" type="percept_node" output="screen">
+    <param name="use_ground_truth" value="false"/>
+  </node>
+  <node name="learning_node" pkg="world_percept_assig4" type="learning_node" output="screen">
+    <param name="vision/image_topic" value="$(arg vision_topic)"/>
+  </node>
+
+  <!-- Control -->
+  <node name="tiago_control_node"
+        pkg="world_percept_assig4"
+        type="tiago_control_node"
+        output="screen">
+    <param name="target_name" value="$(arg target_name)"/>
+  </node>
+</launch>

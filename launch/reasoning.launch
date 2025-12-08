@@ -2,7 +2,7 @@
 <launch>
 
   <!-- Base path where query logs will be written/read (passed to reasoning_node) -->
-  <arg name="queries_root" default="/tmp"/>
+  <arg name="queries_root" default="$(find world_percept_assig4)"/>
 
   <!-- rosprolog for storing & providing ontology services -->
   <param name="initial_package" type="string" value="world_percept_assig4" />
