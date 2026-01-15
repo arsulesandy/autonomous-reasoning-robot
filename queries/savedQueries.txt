@@ -1,1 +1,7 @@
 # Prolog queries learned at runtime will be appended here by reasoning_node/knowledge_node.
+get_class('CupRed').
+create_instance_from_class('CupRed',0,Instance).
+get_class('Bookshelf').
+create_instance_from_class('Bookshelf',1,Instance).
+get_class('CupRed').
+create_instance_from_class('CupRed',2,Instance).
