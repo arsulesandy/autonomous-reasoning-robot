@@ -20,6 +20,7 @@ public:
       have_tiago_pose_(false),
       have_target_pose_(false),
       target_name_("table"),
+      cmd_vel_topic_("/mobile_base_controller/cmd_vel"),
       last_cmd_(),
       last_query_(ros::Time(0)),
       obstacle_distance_(std::numeric_limits<double>::infinity()),
@@ -30,16 +31,19 @@ public:
     {
         ros::NodeHandle pnh("~");
         pnh.param<std::string>("target_name", target_name_, target_name_);
+        pnh.param<std::string>("cmd_vel_topic", cmd_vel_topic_, cmd_vel_topic_);
         pnh.param("obstacle_stop_threshold", obstacle_stop_threshold_, obstacle_stop_threshold_);
         pnh.param("pointing_distance_threshold", pointing_distance_threshold_, pointing_distance_threshold_);
 
         sub_ = nh_.subscribe("/gazebo/model_states", 10, &TiagoController::modelStatesCb, this);
         obstacle_sub_ = nh_.subscribe("/learning/obstacle_distance", 1, &TiagoController::obstacleCb, this);
-        cmd_pub_ = nh_.advertise<geometry_msgs::Twist>("/key_vel", 1);
+        cmd_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
         arm_cmd_pub_ = nh_.advertise<trajectory_msgs::JointTrajectory>("/arm_controller/command", 1, true);
         head_cmd_pub_ = nh_.advertise<trajectory_msgs::JointTrajectory>("/head_controller/command", 1, true);
         scene_client_ = nh_.serviceClient<world_percept_assig4::GetSceneObjectList>("get_scene_object_list");
         compute_srv_ = nh_.advertiseService("compute_target_twist", &TiagoController::computeServiceCb, this);
+
+        ROS_INFO_STREAM("tiago_control_node publishing Twist commands to " << cmd_vel_topic_);
     }
 
 private:
@@ -57,6 +61,7 @@ private:
     bool have_tiago_pose_;
     bool have_target_pose_;
     std::string target_name_;
+    std::string cmd_vel_topic_;
     geometry_msgs::Twist last_cmd_;
     ros::Time last_query_;
     double obstacle_distance_;
@@ -261,6 +266,12 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "tiago_control_node");
     ros::NodeHandle nh;
+
+    if (argc > 1)
+    {
+        ros::NodeHandle pnh("~");
+        pnh.setParam("target_name", std::string(argv[1]));
+    }
 
     TiagoController controller(nh);
     ros::spin();

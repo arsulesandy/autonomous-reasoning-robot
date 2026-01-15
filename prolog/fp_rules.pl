@@ -14,21 +14,22 @@
 :- use_module(library(lists)).
 
 :- dynamic object_observation/4.
+% keeping the observations here so we don't lose them between checks
 
 %% observe_instance(+Class,+Surface,+Confidence)
-% Assert a new perception event so reasoning can be updated on demand.
+% Just drop a new sighting in the DB with a timestamp.
 observe_instance(Class, Surface, Confidence) :-
     get_time(T),
     assertz(object_observation(Class, Surface, Confidence, T)).
 
 %% observation_count(+Class,+Surface,?Count)
-% Inference predicate: how many times we have seen Class on a given Surface.
+% How many times we saw Class on a given Surface (basic counting).
 observation_count(Class, Surface, Count) :-
     findall(1, object_observation(Class, Surface, _, _), L),
     length(L, Count).
 
 %% likelihood_of_surface(+Class,+Surface,?Probability)
-% Inference predicate: smoothed likelihood of the class being on the surface.
+% Quick add-one smoothing so we don't get 0/0 when nothing is seen yet.
 likelihood_of_surface(Class, Surface, Probability) :-
     findall(S, object_observation(Class, S, _, _), AllSurfaces),
     length(AllSurfaces, Total),
@@ -37,7 +38,7 @@ likelihood_of_surface(Class, Surface, Probability) :-
     Probability is (Count + 1) / (Total + 1).
 
 %% recent_surface(+Class,+Surface)
-% Inference predicate: true if we recently saw the class on the surface.
+% True if we saw it in the last ~30s (pretty arbitrary but works in sim).
 recent_surface(Class, Surface) :-
     get_time(Now),
     object_observation(Class, Surface, _, T),
@@ -52,19 +53,19 @@ surface_conflict(Class) :-
     L > 1.
 
 %% preferred_surface(+Class,?Surface)
-% Decision predicate: choose the most likely surface for the class.
+% Pick the surface with the best score; ties handled by list order.
 preferred_surface(Class, Surface) :-
     setof(Prob-S, likelihood_of_surface(Class, S, Prob), Ranked),
     last(Ranked, _-Surface).
 
 %% search_target(+Class,?Surface,?Confidence)
-% Decision predicate: propose a surface to search and return its confidence.
+% Where to look next plus the confidence we think it has.
 search_target(Class, Surface, Confidence) :-
     preferred_surface(Class, Surface),
     likelihood_of_surface(Class, Surface, Confidence).
 
 %% needs_confirmation(+Class)
-% Decision predicate: true if two surfaces are similarly likely and need validation.
+% If best vs second-best are too close (<=0.2), we should double check.
 needs_confirmation(Class) :-
     preferred_surface(Class, SurfaceBest),
     likelihood_of_surface(Class, SurfaceBest, PBest),
@@ -74,7 +75,7 @@ needs_confirmation(Class) :-
     Margin =< 0.2.
 
 %% decision_to_revisit(+Class,?Surface)
-% Decision predicate: suggest revisiting a surface when we have not seen the class there recently.
+% Suggest going back if the top surface hasn't been seen lately.
 decision_to_revisit(Class, Surface) :-
     preferred_surface(Class, Surface),
     \+ recent_surface(Class, Surface).

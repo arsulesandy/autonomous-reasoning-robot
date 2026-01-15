@@ -1,55 +1,187 @@
-# SSY236 – Final Project
-Group 29  
-Sandeep Arsule, Harshith Pidur Kuppusamy
+# Final Project – How We Ran It
 
-This package implements the final project requirements (perception, reasoning, control and learning). The old `map_generator_node` has been removed; a new `learning_node` now connects perception, reasoning and control, performs online learning, and exposes evaluation metrics.
+Team: Sandeep Arsule, Harshith Pidur Kuppusamy (Group 29)
 
-## Run the full stack
+These are the steps we actually ran; follow them to replay our checks.
+
+Context and constraints:
+- We had to work headless from macOS; our Windows setup failed and EC2 GPU hours were too costly, so we stayed on the TIAGo container.
+- We ran out of time from other exam and thesis, though this is not excuse but we needed do this mostly from terminal.
+- The notes below capture exactly what we ran so can be reproduced from the terminal.
+
+## Common setup (each terminal)
 ```
-cd /home/user/exchange/ssy236_arsule
+docker exec -it -w /home/user/exchange/ssy236_arsule tiago bash
 source /knowrob_ws/devel/setup.bash
 catkin_make
 source devel/setup.bash
+```
 
-# 1) Simulator
-roslaunch world_percept_assig4 gazebo_ssy236.launch
+## 1) Gazebo (headless is fine)
+```
+roslaunch world_percept_assig4 gazebo_ssy236.launch gzclient:=false
+# wait until: rostopic echo -n 1 /clock
+```
 
-# 2) Perception + learning + reasoning + control (new stack)
+## 2) Full stack (perception + learning + reasoning + control)
+```
 roslaunch world_percept_assig4 final_project.launch \
   queries_root:=$(rospack find world_percept_assig4) \
-  target_name:=bookshelf
-
-# 3) Load previously asserted knowledge (optional warm start)
-rosservice call /load_knowledge "start: 1"
-
-# 4) (Optional) Live ML metrics using scikit-learn if installed
-rosrun world_percept_assig4 learning_metrics.py
+  target_name:=bookshelf \
+  use_direct_perception:=true \
+  percept_use_ground_truth:=true
+```
+We used ground truth here so it’s easy to see the target; we can flip those flags to false for pure sensors.
+Observed stack highlights from our run:
+```
+[ WARN] Target object [bookshelf] not found
+[ INFO] Got new object: Bookshelf
+New class created: Bookshelf
+[ WARN] new instance in knowledge base: ...#Bookshelf_1
+[ INFO] Observed bookshelf on bookshelf (predicted: )
+...
+[ INFO] Got new object: CupRed
+New class created: CupRed
+[ WARN] new instance in knowledge base: ...#CupRed_2
 ```
 
-## Key interfaces (all provided by `learning_node`)
-- `update_object_list` (`world_percept_assig4/UpdateObjectList`): used by `percept_node` and vision to push new detections (poses go straight into the learner and ontology).
-- `get_scene_object_list` (`world_percept_assig4/GetSceneObjectList`): queried by `tiago_control_node`; falls back to learned Prolog decisions when a target has not been observed yet.
-- `report_learning_metrics` (`std_srvs/Trigger`): returns the live confusion matrix for the learned Naive Bayes model.
-- Topic `learning/obstacle_distance` (`std_msgs/Float32`): front-laser based safety distance that gates the controller.
-
-## What changed for the Final Project
-- Removed `map_generator_node`; the controller now talks only to `learning_node`, which in turn calls `reasoning_node` to assert knowledge.
-- Added online learning over object/support relations (Dirichlet-smoothed counts + confusion matrix evaluation). Exposes JSON metrics on `learning/confusion_json` for a scikit-learn consumer (`scripts/learning_metrics.py`) to compute accuracy and confusion matrices (fulfills “online tool” requirement). If sklearn is not present, the script logs raw counts only.
-- Added OpenCV-based vision hook (red blob detection) and laser-based perception loop; both feed `learning_node` so the perception stack uses real sensors rather than world state. Ground-truth perception (`/gazebo/model_states`) is disabled by default (`use_ground_truth:=false` in `final_project.launch`); enable it only for debugging.
-- Added a pointing skill in `tiago_control_node` (arm + head trajectories) once the robot is close to the target; base motion is also gated by laser safety.
-- New Prolog predicates for reasoning/decision making in `prolog/fp_rules.pl`:
-  - Inference: `observe_instance/3`, `observation_count/3`, `likelihood_of_surface/3`, `recent_surface/2`, `surface_conflict/1`.
-  - Decision: `preferred_surface/2`, `search_target/3`, `needs_confirmation/1`, `decision_to_revisit/2`.
-
-## Useful service checks
+## 3) Optional: poke the bookshelf in
+If we don’t want to drive the robot close, just shove the bookshelf into the learner:
 ```
-rosservice call /direct_pose_srv "object_name: 'cafe_table'"
-rosservice call /get_scene_object_list "object_name: 'CupRed'"
+python3 - <<'PY'
+import rospy
+from gazebo_msgs.srv import GetModelState
+from world_percept_assig4.srv import UpdateObjectList, UpdateObjectListRequest
+rospy.init_node('poke_bookshelf')
+get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+upd = rospy.ServiceProxy('/update_object_list', UpdateObjectList)
+state = get_state('bookshelf','')
+print(upd(UpdateObjectListRequest(object_name='bookshelf', object_pose=state.pose)))
+PY
+```
+
+## 4) Reasoning quick checks
+```
+rosservice call /assert_knowledge "object_name: 'CupRed'"
+
+rosrun rosprolog rosprolog
+register_ros_package(world_percept_assig4).
+ensure_loaded('/home/user/exchange/ssy236_arsule/src/autonomous-reasoning-robot/prolog/init.pl').
+observe_instance('Bottle','table',1.0).
+preferred_surface('Bottle', S).
+search_target('Bottle', S, C).
+needs_confirmation('Bottle').
+decision_to_revisit('Bottle', S).
+halt.
+```
+Observed output from our run:
+```
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rosrun rosprolog rosprolog
+Welcome to SWI-Prolog (threaded, 64 bits, version 7.6.4)
+...
+?- register_ros_package(world_percept_assig4).
+true.
+?- ensure_loaded('/home/user/exchange/ssy236_arsule/src/autonomous-reasoning-robot/prolog/init.pl').
+true.
+?- observe_instance('Bottle','table',1.0).
+true.
+?- preferred_surface('Bottle', S).
+true.
+?- search_target('Bottle', S, C).
+C = 1.
+?- needs_confirmation('Bottle').
+false.
+?- decision_to_revisit('Bottle', S).
+false.
+?- halt.
+```
+Also:
+```
+rosservice call /get_scene_object_list "object_name: 'bookshelf'"
+```
+
+## 5) Learning + online tool + evaluation
+```
+rostopic echo -n 1 /learning/confusion_json
 rosservice call /report_learning_metrics
-rosservice call /compute_target_twist "target_name: 'bookshelf'"
+rosrun world_percept_assig4 learning_metrics.py   # prints sklearn confusion/accuracy if installed
+```
+Observed output from our run:
+```
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rostopic echo -n 1 /learning/confusion_json
+data: "{\"bookshelf\":{\"untrained\":1}}"
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rosservice call /report_learning_metrics
+success: True
+message: "{\"bookshelf\":{\"untrained\":1}}"
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rosrun world_percept_assig4 learning_metrics.py
+[INFO] [1768512896.974855, 3825.984000]: Confusion labels: ['bookshelf', 'untrained']
+[INFO] [1768512896.975981, 3825.984000]: Counts matrix: [[0, 1], [0, 0]]
+[WARN] [1768512896.977193, 3825.985000]: sklearn not available; showing raw counts only.
 ```
 
-## Notes
-- The Prolog backend and saved queries are kept under `queries/savedQueries.txt`; launch files default `queries_root` to the package path so the file is picked up automatically.
-- The vision hook subscribes to `head_front_camera/rgb/image_raw` by default; override via `vision_topic` in `final_project.launch`.
-- `learning_node` asserts knowledge only once per class, then streams observations via `observe_instance/3` for online reasoning. 
+## 6) Control loop + pointing skill
+```
+rosservice call /compute_target_twist "target_name: 'bookshelf'"
+rostopic echo -n 5 /mobile_base_controller/cmd_vel
+rostopic echo -n 5 /learning/obstacle_distance
+rostopic echo -n 1 /arm_controller/command
+rostopic echo -n 1 /head_controller/command
+```
+Observed output from our run:
+```
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rosservice call /compute_target_twist "target_name: 'bookshelf'"
+cmd_vel:
+  linear: {x: 0.0, y: 0.0, z: 0.0}
+  angular: {x: 0.0, y: 0.0, z: -1.7459857265126216e-05}
+success: True
+message: "Command computed"
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rostopic echo -n 5 /mobile_base_controller/cmd_vel
+linear: {x: 0.0, y: 0.0, z: 0.0}
+angular: {x: 0.0, y: 0.0, z: -1.731559431382936e-05}
+---
+linear: {x: 0.0, y: 0.0, z: 0.0}
+angular: {x: 0.0, y: 0.0, z: -1.724745325427025e-05}
+---
+linear: {x: 0.0, y: 0.0, z: 0.0}
+angular: {x: 0.0, y: 0.0, z: -1.7353162457053196e-05}
+---
+linear: {x: 0.0, y: 0.0, z: 0.0}
+angular: {x: 0.0, y: 0.0, z: -1.7353163216802342e-05}
+---
+linear: {x: 0.0, y: 0.0, z: 0.0}
+angular: {x: 0.0, y: 0.0, z: -1.7323033146811857e-05}
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rostopic echo -n 5 /learning/obstacle_distance
+WARNING: no messages received and simulated time is active.
+Is /clock being published?
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rostopic echo -n 1 /arm_controller/command
+joint_names: [arm_1_joint, arm_2_joint, arm_3_joint, arm_4_joint, arm_5_joint, arm_6_joint, arm_7_joint]
+points:
+  - positions: [0.25, -1.0, -0.2, 1.5, 0.0, -0.6, 0.0]
+    time_from_start: {secs: 2, nsecs: 500000000}
+
+root@0d5ad4754c10:/home/user/exchange/ssy236_arsule# rostopic echo -n 1 /head_controller/command
+joint_names: [head_1_joint, head_2_joint]
+points:
+  - positions: [0.0007550168041108116, -0.25]
+    time_from_start: {secs: 1, nsecs: 0}
+```
+
+## What we accomplished (tasks and subtasks)
+- Brought up Gazebo headlessly and confirmed simulated time via `/clock`.
+- Built and launched the full stack (perception, learning, reasoning, control) with ground-truth perception for reproducibility.
+- Detected and instantiated `Bookshelf` and `CupRed` in the ontology; verified via TF logs and Prolog queries.
+- Injected the bookshelf pose via service to seed the scene and confirmed with `/get_scene_object_list`.
+- Ran reasoning checks in `rosprolog` (load `init.pl`, observe instance, query surface preferences, revisit logic).
+- Collected learning metrics (confusion JSON, metrics service, fallback counts without sklearn).
+- Exercised control interfaces: computed target twist for bookshelf, observed base cmd_vel stream, checked arm/head commands.
+- Noted `/learning/obstacle_distance` stays empty when `/scan` is not publishing.
+
+## Mapping to FP tasks
+- FP.T01 Reasoning: we added a bunch of Prolog rules to store sightings, count them, pick a best surface, and decide if we need to revisit (`observe_instance`, `preferred_surface`, `search_target`, `needs_confirmation`, `decision_to_revisit`, etc.). We also push facts into the KB with `/assert_knowledge` and `update_object_list`.
+- FP.T02 Learning: the learning node keeps simple counts over surfaces (add-one smoothing) and we use the running stack as our “online tool”. We show an evaluation by dumping the confusion JSON and confusion matrix (via `/learning/confusion_json`, `/report_learning_metrics`, `learning_metrics.py`).
+- FP.T03 Robotics: we run the full perception-action loop: direct perception from Gazebo, update objects, compute a target twist, and see commands on the base/arm/head. Manipulation/pointing is through the arm/head controllers.

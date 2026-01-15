@@ -3,6 +3,8 @@
   <arg name="queries_root" default="$(find world_percept_assig4)"/>
   <arg name="target_name" default="bookshelf"/>
   <arg name="vision_topic" default="head_front_camera/rgb/image_raw"/>
+  <arg name="percept_use_ground_truth" default="false"/>
+  <arg name="use_direct_perception" default="false"/>
 
   <!-- Ontology backend -->
   <param name="initial_package" type="string" value="world_percept_assig4" />
@@ -23,9 +25,13 @@
         args="$(arg queries_root)"/>
 
   <!-- Perception stack -->
-  <node name="direct_percept_node" pkg="world_percept_assig4" type="direct_percept_node" output="screen"/>
+  <node name="direct_percept_node"
+        pkg="world_percept_assig4"
+        type="direct_percept_node"
+        output="screen"
+        if="$(arg use_direct_perception)"/>
   <node name="percept_node" pkg="world_percept_assig4" type="percept_node" output="screen">
-    <param name="use_ground_truth" value="false"/>
+    <param name="use_ground_truth" value="$(arg percept_use_ground_truth)"/>
   </node>
   <node name="learning_node" pkg="world_percept_assig4" type="learning_node" output="screen">
     <param name="vision/image_topic" value="$(arg vision_topic)"/>
@@ -37,5 +43,6 @@
         type="tiago_control_node"
         output="screen">
     <param name="target_name" value="$(arg target_name)"/>
+    <param name="cmd_vel_topic" value="/mobile_base_controller/cmd_vel"/>
   </node>
 </launch>
