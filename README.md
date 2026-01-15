@@ -6,7 +6,7 @@ These are the steps we actually ran; follow them to replay our checks.
 
 Context and constraints:
 - We had to work headless from macOS; our Windows setup failed and EC2 GPU hours were too costly, so we stayed on the TIAGo container.
-- Because of time pressure we focused on command-line verification and logging rather than polishing the UI or adding more tests.
+- We ran out of time from other exam and thesis, though this is not excuse but we needed do this mostly from terminal.
 - The notes below capture exactly what we ran so can be reproduced from the terminal.
 
 ## Common setup (each terminal)
