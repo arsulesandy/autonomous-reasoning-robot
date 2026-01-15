@@ -170,3 +170,18 @@ points:
   - positions: [0.0007550168041108116, -0.25]
     time_from_start: {secs: 1, nsecs: 0}
 ```
+
+## What we accomplished (tasks and subtasks)
+- Brought up Gazebo headlessly and confirmed simulated time via `/clock`.
+- Built and launched the full stack (perception, learning, reasoning, control) with ground-truth perception for reproducibility.
+- Detected and instantiated `Bookshelf` and `CupRed` in the ontology; verified via TF logs and Prolog queries.
+- Injected the bookshelf pose via service to seed the scene and confirmed with `/get_scene_object_list`.
+- Ran reasoning checks in `rosprolog` (load `init.pl`, observe instance, query surface preferences, revisit logic).
+- Collected learning metrics (confusion JSON, metrics service, fallback counts without sklearn).
+- Exercised control interfaces: computed target twist for bookshelf, observed base cmd_vel stream, checked arm/head commands.
+- Noted `/learning/obstacle_distance` stays empty when `/scan` is not publishing.
+
+## Mapping to FP tasks
+- FP.T01 Reasoning: we added a bunch of Prolog rules to store sightings, count them, pick a best surface, and decide if we need to revisit (`observe_instance`, `preferred_surface`, `search_target`, `needs_confirmation`, `decision_to_revisit`, etc.). We also push facts into the KB with `/assert_knowledge` and `update_object_list`.
+- FP.T02 Learning: the learning node keeps simple counts over surfaces (add-one smoothing) and we use the running stack as our “online tool”. We show an evaluation by dumping the confusion JSON and confusion matrix (via `/learning/confusion_json`, `/report_learning_metrics`, `learning_metrics.py`).
+- FP.T03 Robotics: we run the full perception-action loop: direct perception from Gazebo, update objects, compute a target twist, and see commands on the base/arm/head. Manipulation/pointing is through the arm/head controllers.
