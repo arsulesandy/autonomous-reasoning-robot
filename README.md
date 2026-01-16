@@ -5,10 +5,9 @@ Team: Sandeep Arsule, Harshith Pidur Kuppusamy (Group 29)
 These are the steps we followed for headless gazebo test run.
 
 Context and constraints:
-- We had to work headless from macOS; our Windows setup failed and EC2 GPU hours were too costly, so we stayed on the TIAGo container.
+- We had to work headless from macOS; our Windows setup failed from Harshith machine and EC2 GPU hours were too costly, so we stayed on the TIAGo container.
 - We ran out of time from other exam and thesis prepp, though this is not excuse but we needed do this mostly from terminal.
 - The notes below capture exactly what we ran so can be reproduced from the terminal.
-- Also we kept old package name from assignment 4
 
 ## Common setup (each terminal)
 ```
@@ -142,7 +141,3 @@ angular: {x: 0.0, y: 0.0, z: 4.9140668572718835e-05}
 - Exercised control: computed target twist for `table` and observed the base cmd_vel stream.
 - Noted `/learning/obstacle_distance` stays empty when `/scan` is not publishing.
 
-## Mapping to FP tasks (headless run)
-- FP.T01 Reasoning: Prolog rules to store sightings and pick a best surface (`observe_instance`, `preferred_surface`, `search_target`, `needs_confirmation`, `decision_to_revisit`); facts pushed via `update_object_list`.
-- FP.T02 Learning: learning node keeps add-one smoothed surface counts; we use the running stack as the online tool and report confusion via `/learning/confusion_json` and `/report_learning_metrics` (raw counts without sklearn).
-- FP.T03 Robotics: full perception–action loop with direct Gazebo perception, object updates, computed twist to the target (`table`), and base/arm/head commands for motion/pointing.
