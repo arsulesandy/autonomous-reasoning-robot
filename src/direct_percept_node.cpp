@@ -14,7 +14,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <visualization_msgs/Marker.h>
 
-#include <world_percept_assig4/DirectPose.h>
+#include <final_project/DirectPose.h>
 
 
 class DirectWorldInfo
@@ -181,8 +181,8 @@ private:
 
 
   bool service_callback(
-      world_percept_assig4::DirectPose::Request &req,
-      world_percept_assig4::DirectPose::Response &res)
+      final_project::DirectPose::Request &req,
+      final_project::DirectPose::Response &res)
   {
       const std::string &name = req.object_name;
 

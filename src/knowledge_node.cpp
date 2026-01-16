@@ -4,7 +4,7 @@
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
-#include <world_percept_assig4/LoadKnowledge.h>
+#include <final_project/LoadKnowledge.h>
 
 class Knowledge
 {
@@ -43,8 +43,8 @@ private:
     ros::ServiceServer load_knowledge_srv_;
     std::ifstream query_file_;
 
-    bool callback_load_knowledge(world_percept_assig4::LoadKnowledge::Request &req,
-                                 world_percept_assig4::LoadKnowledge::Response &res)
+    bool callback_load_knowledge(final_project::LoadKnowledge::Request &req,
+                                 final_project::LoadKnowledge::Response &res)
     {
         if (req.start != 1)
         {
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
     if (argc < 2)
     {
-        ROS_ERROR_STREAM("Missing base path for query file. Usage: rosrun world_percept_assig4 knowledge_node <path>");
+        ROS_ERROR_STREAM("Missing base path for query file. Usage: rosrun final_project knowledge_node <path>");
         return 1;
     }
 
