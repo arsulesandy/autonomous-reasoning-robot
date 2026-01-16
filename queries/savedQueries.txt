@@ -2,3 +2,7 @@ get_class('Table').
 create_instance_from_class('Table',0,Instance).
 get_class('Coke_can').
 create_instance_from_class('Coke_can',1,Instance).
+get_class('Table').
+create_instance_from_class('Table',0,Instance).
+get_class('Coke_can').
+create_instance_from_class('Coke_can',1,Instance).

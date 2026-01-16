@@ -9,8 +9,8 @@
 #include <limits>
 #include <string>
 
-#include <world_percept_assig4/GetSceneObjectList.h>
-#include <world_percept_assig4/ComputeTiagoTwist.h>
+#include <final_project/GetSceneObjectList.h>
+#include <final_project/ComputeTiagoTwist.h>
 
 class TiagoController
 {
@@ -40,7 +40,7 @@ public:
         cmd_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
         arm_cmd_pub_ = nh_.advertise<trajectory_msgs::JointTrajectory>("/arm_controller/command", 1, true);
         head_cmd_pub_ = nh_.advertise<trajectory_msgs::JointTrajectory>("/head_controller/command", 1, true);
-        scene_client_ = nh_.serviceClient<world_percept_assig4::GetSceneObjectList>("get_scene_object_list");
+        scene_client_ = nh_.serviceClient<final_project::GetSceneObjectList>("get_scene_object_list");
         compute_srv_ = nh_.advertiseService("compute_target_twist", &TiagoController::computeServiceCb, this);
 
         ROS_INFO_STREAM("tiago_control_node publishing Twist commands to " << cmd_vel_topic_);
@@ -84,7 +84,7 @@ private:
 
     bool updateTargetPose(const std::string &name)
     {
-        world_percept_assig4::GetSceneObjectList srv;
+        final_project::GetSceneObjectList srv;
         srv.request.object_name = name;
 
         if (!scene_client_.call(srv))
@@ -228,8 +228,8 @@ private:
         maybePointAtTarget(dist, theta);
     }
 
-    bool computeServiceCb(world_percept_assig4::ComputeTiagoTwist::Request &req,
-                          world_percept_assig4::ComputeTiagoTwist::Response &res)
+    bool computeServiceCb(final_project::ComputeTiagoTwist::Request &req,
+                          final_project::ComputeTiagoTwist::Response &res)
     {
         const std::string &requested_target = req.target_name.empty() ? target_name_ : req.target_name;
 

@@ -8,7 +8,7 @@
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
-#include <world_percept_assig4/UpdateObjectList.h>
+#include <final_project/UpdateObjectList.h>
 
 using namespace std;
 
@@ -73,8 +73,8 @@ private:
      * @param Request requested object to be added to the knowledge base
      * @param Respose response from the service when the object has been asserted (true/false)
      */
-    bool srv_assert_callback(world_percept_assig4::UpdateObjectList::Request &req,
-                             world_percept_assig4::UpdateObjectList::Response &res)
+    bool srv_assert_callback(final_project::UpdateObjectList::Request &req,
+                             final_project::UpdateObjectList::Response &res)
     {
         ROS_INFO_STREAM("Got new object: " << req.object_name);
         std::string object;
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 
   if(argc < 2)
   {
-      ROS_ERROR_STREAM("Missing base path for query file. Usage: rosrun world_percept_assig4 reasoning_node <path>");
+      ROS_ERROR_STREAM("Missing base path for query file. Usage: rosrun final_project reasoning_node <path>");
       return 1;
   }
 

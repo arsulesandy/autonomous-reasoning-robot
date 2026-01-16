@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(world_percept_assig4)
+project(final_project)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -123,7 +123,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES world_percept_assig4
+#  LIBRARIES final_project
  CATKIN_DEPENDS roscpp std_msgs gazebo_msgs geometry_msgs rosprolog sensor_msgs image_transport cv_bridge trajectory_msgs std_srvs
 #  DEPENDS system_lib
 )

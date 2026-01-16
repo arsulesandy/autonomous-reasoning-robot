@@ -15,8 +15,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <world_percept_assig4/UpdateObjectList.h>
-#include <world_percept_assig4/GetSceneObjectList.h>
+#include <final_project/UpdateObjectList.h>
+#include <final_project/GetSceneObjectList.h>
 
 #include <rosprolog/rosprolog_client/PrologClient.h>
 
@@ -53,7 +53,7 @@ public:
         scene_srv_ = nh_.advertiseService("get_scene_object_list", &LearningNode::sceneCallback, this);
         report_srv_ = nh_.advertiseService("report_learning_metrics", &LearningNode::reportCallback, this);
 
-        reasoning_client_ = nh_.serviceClient<world_percept_assig4::UpdateObjectList>("assert_knowledge");
+        reasoning_client_ = nh_.serviceClient<final_project::UpdateObjectList>("assert_knowledge");
 
         if (pl_.waitForServer())
         {
@@ -143,16 +143,16 @@ private:
         return norm;
     }
 
-    bool updateCallback(world_percept_assig4::UpdateObjectList::Request &req,
-                        world_percept_assig4::UpdateObjectList::Response &res)
+    bool updateCallback(final_project::UpdateObjectList::Request &req,
+                        final_project::UpdateObjectList::Response &res)
     {
         processObservation(req.object_name, req.object_pose);
         res.confirmation = true;
         return true;
     }
 
-    bool sceneCallback(world_percept_assig4::GetSceneObjectList::Request &req,
-                       world_percept_assig4::GetSceneObjectList::Response &res)
+    bool sceneCallback(final_project::GetSceneObjectList::Request &req,
+                       final_project::GetSceneObjectList::Response &res)
     {
         geometry_msgs::Twist zero_twist;
 
@@ -331,7 +331,7 @@ private:
             return;
         }
 
-        world_percept_assig4::UpdateObjectList srv;
+        final_project::UpdateObjectList srv;
         srv.request.object_name = class_name;
         if (!reasoning_client_.exists())
         {

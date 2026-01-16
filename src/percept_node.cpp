@@ -7,8 +7,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <gazebo_msgs/ModelStates.h>
-#include <world_percept_assig4/UpdateObjectList.h>
-#include <world_percept_assig4/SetInitTiagoPose.h>
+#include <final_project/UpdateObjectList.h>
+#include <final_project/SetInitTiagoPose.h>
 
 #include <cmath>
 #include <algorithm>
@@ -47,7 +47,7 @@ public:
         // create client and wait until service is advertised
         srv_update_obj_name_="update_object_list";
 
-        client_learning_ = nh.serviceClient<world_percept_assig4::UpdateObjectList>(srv_update_obj_name_);
+        client_learning_ = nh.serviceClient<final_project::UpdateObjectList>(srv_update_obj_name_);
 
         // Wait for the service to be advertised
         ROS_INFO("Waiting for service %s to be advertised...", srv_update_obj_name_.c_str());
@@ -126,7 +126,7 @@ private:
             // If the obj name is not found in the seen vector, this means that the robot has seen a new object for the first time and it should add it to the seen vector and call the service update_object_list
             if (it == v_seen_obj_.end()) {
 
-                world_percept_assig4::UpdateObjectList srv;
+                final_project::UpdateObjectList srv;
 
                 srv.request.object_name = s;
                 srv.request.object_pose = obj_pose;

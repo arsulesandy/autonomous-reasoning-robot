@@ -20,7 +20,7 @@ source devel/setup.bash
 
 ## 1) Gazebo (headless one)
 ```
-roslaunch world_percept_assig4 gazebo_ssy236.launch gzclient:=false
+roslaunch final_project gazebo_ssy236.launch gzclient:=false
 # wait until: rostopic echo -n 1 /clock
 ```
 Observed output from our run (headless, so RViz fails):
@@ -34,7 +34,7 @@ MoveGroup using OMPL; arm tuck succeeded
 
 ## 2) Full stack (perception + learning + reasoning + control)
 ```
-roslaunch world_percept_assig4 final_project.launch use_direct_perception:=true percept_use_ground_truth:=true target_name:=table
+roslaunch final_project final_project.launch use_direct_perception:=true percept_use_ground_truth:=true target_name:=table
 ```
 We used ground truth here so it’s easy to see the target; we can flip those flags to false for pure sensors. Headless notes: expect “target not found” warnings until you add/see it, and RViz will fail without X. Once you seed/see `table` you’ll get `Got new object: Table` and warnings stop.
 
@@ -44,7 +44,7 @@ We poked `table` into the learning node so services can find it:
 python3 - <<'PY'
 import rospy
 from gazebo_msgs.srv import GetModelState
-from world_percept_assig4.srv import UpdateObjectList, UpdateObjectListRequest
+from final_project.srv import UpdateObjectList, UpdateObjectListRequest
 rospy.init_node('poke_table')
 get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 upd = rospy.ServiceProxy('/update_object_list', UpdateObjectList)
@@ -57,7 +57,7 @@ Seed the bottle (`coke_can` in the kitchen world):
 python3 - <<'PY'
 import rospy
 from gazebo_msgs.srv import GetModelState
-from world_percept_assig4.srv import UpdateObjectList, UpdateObjectListRequest
+from final_project.srv import UpdateObjectList, UpdateObjectListRequest
 rospy.init_node('poke_coke_can')
 get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
 upd = rospy.ServiceProxy('/update_object_list', UpdateObjectList)
@@ -70,7 +70,7 @@ rosservice call /get_scene_object_list "object_name: 'coke_can'"
 ## 4) Reasoning quick checks
 ```
 rosrun rosprolog rosprolog
-register_ros_package(world_percept_assig4).
+register_ros_package(final_project).
 ensure_loaded('/home/user/exchange/ssy236_arsule/src/autonomous-reasoning-robot/prolog/init.pl').
 observe_instance('Bottle','table',1.0).
 preferred_surface('Bottle', S).
@@ -79,7 +79,7 @@ halt.
 ```
 Observed output:
 ```
-?- register_ros_package(world_percept_assig4).
+?- register_ros_package(final_project).
 true.
 ?- ensure_loaded('/home/user/exchange/ssy236_arsule/src/autonomous-reasoning-robot/prolog/init.pl').
 true.
